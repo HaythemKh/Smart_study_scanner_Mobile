@@ -10,7 +10,7 @@ import {
   Send,
   Sparkles,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -18,6 +18,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const sourceCards = [
@@ -79,6 +87,50 @@ const actionOptions = [
 
 export default function ChatScreen() {
   const [selectedSource, setSelectedSource] = useState<number | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const scrollViewRef = React.useRef<ScrollView>(null);
+
+  // Animation values
+  const pulseScale = useSharedValue(1);
+  const progressWidth = useSharedValue(0);
+
+  useEffect(() => {
+    if (isProcessing) {
+      // Pulse animation for AI indicator
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+      );
+
+      // Progress bar animation
+      progressWidth.value = 0;
+      progressWidth.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 0 }),
+        ),
+        -1,
+      );
+
+      // Auto-scroll to loading section
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isProcessing]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value * 100}%`,
+  }));
 
   const handleSourceSelect = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -88,6 +140,20 @@ export default function ChatScreen() {
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedSource(null);
+    setSelectedAction(null);
+    setIsProcessing(false);
+  };
+
+  const handleActionSelect = (actionLabel: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedAction(actionLabel);
+    setIsProcessing(true);
+
+    // Simulate processing (remove this when you connect to real API)
+    setTimeout(() => {
+      setIsProcessing(false);
+      // Here you would show the result
+    }, 5000);
   };
 
   return (
@@ -112,10 +178,10 @@ export default function ChatScreen() {
               {/* Home View - Avatar, Greeting, Progress */}
               <View style={styles.topBarLeft}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>A</Text>
+                  <Text style={styles.avatarText}>H</Text>
                 </View>
                 <View style={styles.greetingContainer}>
-                  <Text style={styles.greeting}>Good morning 👋 Alex</Text>
+                  <Text style={styles.greeting}>Good morning 👋 Haythem</Text>
                   <View style={styles.levelContainer}>
                     <View style={styles.levelBar}>
                       <LinearGradient
@@ -155,6 +221,7 @@ export default function ChatScreen() {
 
         {/* Scrollable Content */}
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -168,7 +235,7 @@ export default function ChatScreen() {
                 </View>
                 <View style={styles.botBubble}>
                   <Text style={styles.botText}>
-                    Hey Alex! Ready to turn some notes into knowledge today?
+                    Hey Haythem! Ready to turn some notes into knowledge today?
                     Pick a source to start scanning.
                   </Text>
                 </View>
@@ -270,39 +337,136 @@ export default function ChatScreen() {
                   <View style={styles.actionsGrid}>
                     {actionOptions.map((action, index) => {
                       const IconComponent = action.icon;
+                      const isSelected = selectedAction === action.label;
+                      const shouldShow = !selectedAction || isSelected;
+
+                      if (!shouldShow) return null;
+
                       return (
                         <TouchableOpacity
                           key={index}
-                          onPress={() =>
-                            Haptics.impactAsync(
-                              Haptics.ImpactFeedbackStyle.Medium,
-                            )
-                          }
+                          onPress={() => handleActionSelect(action.label)}
                           activeOpacity={0.8}
+                          disabled={isSelected}
                           style={[
                             styles.actionCard,
                             action.fullWidth && styles.actionCardFull,
+                            isSelected && {
+                              borderWidth: 2,
+                              borderColor: action.color,
+                              backgroundColor: action.bgColor,
+                            },
                           ]}
                         >
                           <View
                             style={[
                               styles.actionIconContainer,
                               { backgroundColor: action.bgColor },
+                              isSelected && {
+                                backgroundColor: action.color,
+                              },
                             ]}
                           >
                             <IconComponent
-                              color={action.color}
+                              color={isSelected ? "white" : action.color}
                               size={20}
                               strokeWidth={2.5}
                             />
                           </View>
-                          <Text style={styles.actionLabel}>{action.label}</Text>
+                          <Text
+                            style={[
+                              styles.actionLabel,
+                              isSelected && { color: action.color },
+                            ]}
+                          >
+                            {action.label}
+                          </Text>
+                          {isSelected && (
+                            <View
+                              style={[
+                                styles.selectedBadge,
+                                { backgroundColor: action.color },
+                              ]}
+                            >
+                              <Text style={styles.selectedBadgeText}>✓</Text>
+                            </View>
+                          )}
                         </TouchableOpacity>
                       );
                     })}
                   </View>
                 </View>
               </View>
+
+              {/* Loading State */}
+              {isProcessing && (
+                <View style={styles.loadingSection}>
+                  <View style={styles.botMessage}>
+                    <View style={styles.botAvatar}>
+                      <Text style={styles.botAvatarIcon}>🤖</Text>
+                    </View>
+                    <View style={styles.loadingCard}>
+                      {/* Animated Header */}
+                      <View style={styles.loadingHeader}>
+                        <View style={styles.aiIndicator}>
+                          <Animated.View style={[styles.aiPulse, pulseStyle]} />
+                          <Text style={styles.aiText}>AI PROCESSING</Text>
+                        </View>
+                      </View>
+
+                      {/* Main Loading Message */}
+                      <Text style={styles.loadingMessage}>
+                        {selectedAction === "Summary"
+                          ? "Analyzing your document and extracting key concepts..."
+                          : selectedAction === "Flashcards"
+                            ? "Creating smart flashcards from your content..."
+                            : "Generating quiz questions based on your material..."}
+                      </Text>
+
+                      {/* Animated Progress Bar */}
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressTrack}>
+                          <Animated.View style={progressStyle}>
+                            <LinearGradient
+                              colors={["#6B4DE6", "#FF7A59"]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={styles.progressBar}
+                            />
+                          </Animated.View>
+                        </View>
+                        <Text style={styles.progressText}>
+                          This may take a few seconds...
+                        </Text>
+                      </View>
+
+                      {/* Processing Stats */}
+                      <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                          <Sparkles
+                            color="#6750A4"
+                            size={16}
+                            strokeWidth={2.5}
+                          />
+                          <Text style={styles.statText}>Analyzing</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Layers color="#00A86B" size={16} strokeWidth={2.5} />
+                          <Text style={styles.statText}>Processing</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <FileText
+                            color="#FF7A59"
+                            size={16}
+                            strokeWidth={2.5}
+                          />
+                          <Text style={styles.statText}>Generating</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
             </>
           )}
 
@@ -618,6 +782,20 @@ const styles = StyleSheet.create({
     color: "#1d1b20",
     fontFamily: "PlusJakartaSans_700Bold",
   },
+  selectedBadge: {
+    marginLeft: "auto",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedBadgeText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
   inputContainer: {
     position: "absolute",
     bottom: 112,
@@ -667,5 +845,90 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     opacity: 0.5,
+  },
+  loadingSection: {
+    marginTop: 16,
+  },
+  loadingCard: {
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+    shadowColor: "rgba(75, 54, 204, 0.15)",
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 1,
+    shadowRadius: 40,
+    elevation: 8,
+    maxWidth: "85%",
+    gap: 20,
+  },
+  loadingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  aiIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  aiPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#6B4DE6",
+  },
+  aiText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#6750A4",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
+    letterSpacing: 2,
+  },
+  loadingMessage: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1d1b20",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    lineHeight: 24,
+  },
+  progressContainer: {
+    gap: 8,
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: "#f2ecf4",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    width: "100%",
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#64748b",
+    fontFamily: "PlusJakartaSans_500Medium",
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f2ecf4",
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#64748b",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
 });
