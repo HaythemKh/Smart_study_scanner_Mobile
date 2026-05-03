@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { Href, router } from "expo-router";
 import {
   ArrowLeft,
   Camera,
@@ -27,6 +28,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppStore } from "../../store/useAppStore";
 
 const sourceCards = [
   {
@@ -152,7 +154,213 @@ export default function ChatScreen() {
     // Simulate processing (remove this when you connect to real API)
     setTimeout(() => {
       setIsProcessing(false);
-      // Here you would show the result
+
+      if (actionLabel === "Summary" && selectedSource !== null) {
+        // Create a mock summary and add to store
+        const summaryId = Date.now().toString();
+        const mockSummary = {
+          id: summaryId,
+          title: "The Fundamentals of Thermodynamics: Chapter 7",
+          documentName: sourceCards[selectedSource].fileExample,
+          content:
+            "Chapter 7 provides a comprehensive bridge between classical thermodynamics and the molecular reality of thermodynamic systems. It begins by establishing that the conservation of energy is the cornerstone of all chemical and physical transformations. The text emphasizes that while energy is conserved, the quality of that energy (exergy) is constantly being degraded in any real-world spontaneous process. By examining the microscopic origins of temperature and pressure, the chapter identifies that students often struggle with the distinction between state functions like enthalpy and path functions like work and heat. This chapter systematically deconstructs these hurdles by providing concrete examples of how energy flows through systems and how entropy measures the dispersal of that energy.",
+          keyPoints: [
+            {
+              title: "The Zeroth Law",
+              description:
+                "Defines temperature based on thermal equilibrium. If two systems are each in equilibrium with a third, they are in equilibrium with each other.",
+            },
+            {
+              title: "Enthalpy Shifts",
+              description:
+                "Understanding internal energy plus the product of pressure and volume.",
+            },
+            {
+              title: "Entropy Growth",
+              description:
+                "The universe tends toward disorder as energy dissipates over time.",
+            },
+            {
+              title: "Heat Transfer",
+              description: "Mechanisms of conduction and radiation.",
+            },
+            {
+              title: "Carnot Cycle",
+              description: "Idealized heat engine cycle efficiency limits.",
+            },
+          ],
+          date: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          wordCount: 2400,
+          readingTime: 12,
+          gradient: sourceCards[selectedSource].gradient,
+        };
+
+        useAppStore.getState().addSummary(mockSummary);
+
+        // Navigate to summary screen
+        router.push(`/summary/${summaryId}` as Href);
+      } else if (actionLabel === "Flashcards" && selectedSource !== null) {
+        // Create a mock flashcard deck and add to store
+        const deckId = Date.now().toString();
+        const mockDeck = {
+          id: deckId,
+          title: "Biology Chapter 4 - Flashcards",
+          documentName: sourceCards[selectedSource].fileExample,
+          cards: [
+            {
+              id: "1",
+              question:
+                "What is the primary function of the Mitochondria in a eukaryotic cell?",
+              answer:
+                "It acts as the powerhouse of the cell, generating ATP through aerobic respiration.",
+              keyTerms: "ATP, Aerobic Respiration, Metabolism",
+            },
+            {
+              id: "2",
+              question: "What is the role of the Cell Membrane?",
+              answer:
+                "The cell membrane controls what enters and exits the cell, maintaining homeostasis.",
+              keyTerms: "Selective Permeability, Phospholipid Bilayer",
+            },
+            {
+              id: "3",
+              question: "What does the Nucleus contain?",
+              answer:
+                "The nucleus contains genetic material (DNA) and controls cell activities.",
+              keyTerms: "DNA, Chromatin, Nuclear Envelope",
+            },
+          ],
+          date: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          gradient: sourceCards[selectedSource].gradient,
+        };
+
+        useAppStore.getState().addFlashcardDeck(mockDeck);
+
+        // Navigate to flashcards screen
+        router.push(`/flashcards/${deckId}` as Href);
+      } else if (actionLabel === "Quiz me" && selectedSource !== null) {
+        // Create a mock quiz and add to store
+        const quizId = Date.now().toString();
+        const mockQuiz = {
+          id: quizId,
+          title: "Biology Chapter 4 - Quiz",
+          documentName: sourceCards[selectedSource].fileExample,
+          questions: [
+            {
+              id: "1",
+              category: "CELL BIOLOGY",
+              question:
+                "What is the primary function of mitochondria in eukaryotic cells?",
+              options: [
+                {
+                  id: "A",
+                  label: "A",
+                  text: "Protein synthesis and folding",
+                },
+                {
+                  id: "B",
+                  label: "B",
+                  text: "Energy production through ATP synthesis",
+                },
+                {
+                  id: "C",
+                  label: "C",
+                  text: "DNA replication and repair",
+                },
+                {
+                  id: "D",
+                  label: "D",
+                  text: "Lipid storage and metabolism",
+                },
+              ],
+              correctAnswer: "B",
+              explanation:
+                "Mitochondria are known as the powerhouse of the cell because they generate most of the cell's supply of ATP through aerobic respiration.",
+            },
+            {
+              id: "2",
+              category: "CELL STRUCTURE",
+              question:
+                "Which organelle is responsible for modifying, sorting, and packaging proteins?",
+              options: [
+                {
+                  id: "A",
+                  label: "A",
+                  text: "Endoplasmic Reticulum",
+                },
+                {
+                  id: "B",
+                  label: "B",
+                  text: "Golgi Apparatus",
+                },
+                {
+                  id: "C",
+                  label: "C",
+                  text: "Ribosome",
+                },
+                {
+                  id: "D",
+                  label: "D",
+                  text: "Lysosome",
+                },
+              ],
+              correctAnswer: "B",
+              explanation:
+                "The Golgi apparatus receives proteins from the ER, modifies them, and packages them into vesicles for transport to their final destinations.",
+            },
+            {
+              id: "3",
+              category: "CELL MEMBRANE",
+              question:
+                "What property of the cell membrane allows it to control what enters and exits the cell?",
+              options: [
+                {
+                  id: "A",
+                  label: "A",
+                  text: "Selective permeability",
+                },
+                {
+                  id: "B",
+                  label: "B",
+                  text: "Complete impermeability",
+                },
+                {
+                  id: "C",
+                  label: "C",
+                  text: "Random diffusion",
+                },
+                {
+                  id: "D",
+                  label: "D",
+                  text: "Active transport only",
+                },
+              ],
+              correctAnswer: "A",
+              explanation:
+                "The cell membrane is selectively permeable, meaning it allows certain molecules to pass through while blocking others, maintaining cellular homeostasis.",
+            },
+          ],
+          date: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          gradient: sourceCards[selectedSource].gradient,
+        };
+
+        useAppStore.getState().addQuiz(mockQuiz);
+
+        // Navigate to quiz screen
+        router.push(`/quiz/${quizId}` as Href);
+      }
     }, 5000);
   };
 
