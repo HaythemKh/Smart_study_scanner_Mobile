@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Href, useRouter } from "expo-router";
 import { ArrowLeft, Zap } from "lucide-react-native";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -15,6 +15,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+
+import { useAuth } from "../../contexts/AuthContext";
 
 // Google Icon Component
 function GoogleIcon() {
@@ -42,6 +44,7 @@ function GoogleIcon() {
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { signIn, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Floating animation
@@ -63,15 +66,31 @@ export default function SignInScreen() {
   }));
 
   const handleGoogleSignIn = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsLoading(true);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsLoading(true);
 
-    // Simulate sign-in
-    setTimeout(() => {
-      setIsLoading(false);
+      // Sign in with Google using AuthContext
+      await signIn();
+
+      // Navigate to main app on success
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)/chat" as Href);
-    }, 1500);
+    } catch (error) {
+      console.error("Sign in error:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      Alert.alert(
+        "Sign In Failed",
+        "Unable to sign in with Google. Please try again.",
+        [{ text: "OK" }],
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const isButtonLoading = isLoading || authLoading;
 
   return (
     <View style={styles.container}>
@@ -160,13 +179,13 @@ export default function SignInScreen() {
           {/* Google Sign In Button */}
           <TouchableOpacity
             onPress={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isButtonLoading}
             activeOpacity={0.9}
             style={styles.googleButton}
           >
             <GoogleIcon />
             <Text style={styles.googleButtonText}>
-              {isLoading ? "Signing in..." : "Continue with Google"}
+              {isButtonLoading ? "Signing in..." : "Continue with Google"}
             </Text>
           </TouchableOpacity>
 

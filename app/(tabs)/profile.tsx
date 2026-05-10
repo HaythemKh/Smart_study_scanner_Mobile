@@ -1,35 +1,38 @@
+import { useAuth } from "@/contexts/AuthContext";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-    Bell,
-    BookOpen,
-    ChevronRight,
-    Crown,
-    Edit2,
-    Flame,
-    Globe,
-    Lock,
-    LogOut,
-    Moon,
-    Settings,
-    Shield,
-    Target,
-    TrendingUp,
-    Trophy,
-    Zap
+  Bell,
+  BookOpen,
+  ChevronRight,
+  Crown,
+  Edit2,
+  Flame,
+  Globe,
+  Lock,
+  LogOut,
+  Moon,
+  Settings,
+  Shield,
+  Target,
+  TrendingUp,
+  Trophy,
+  Zap,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Animated,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
+  const { user, signOut } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
@@ -65,11 +68,36 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error("Logout error:", error);
+              Alert.alert("Error", "Failed to log out. Please try again.");
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
-  const currentXP = 1240;
+  const currentXP = user?.xp || 0;
   const maxXP = 1500;
   const xpProgress = (currentXP / maxXP) * 100;
+  const xpToNextLevel = maxXP - (currentXP % maxXP);
 
   return (
     <View style={styles.container}>
@@ -87,7 +115,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <View style={styles.streakBadgeTop}>
             <Flame color="#FF6B35" size={18} strokeWidth={2.5} fill="#FF6B35" />
-            <Text style={styles.streakNumber}>5</Text>
+            <Text style={styles.streakNumber}>{user?.streak || 0}</Text>
           </View>
         </View>
 
@@ -112,7 +140,9 @@ export default function ProfileScreen() {
                   style={styles.avatarGradientRing}
                 >
                   <View style={styles.avatarInner}>
-                    <Text style={styles.avatarText}>H</Text>
+                    <Text style={styles.avatarText}>
+                      {user?.fullName?.charAt(0).toUpperCase() || "U"}
+                    </Text>
                   </View>
                 </LinearGradient>
                 <TouchableOpacity style={styles.editBadge} activeOpacity={0.8}>
@@ -120,8 +150,10 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.userName}>Haythem</Text>
-              <Text style={styles.userEmail}>haythem@student.edu</Text>
+              <Text style={styles.userName}>{user?.fullName || "User"}</Text>
+              <Text style={styles.userEmail}>
+                {user?.email || "user@example.com"}
+              </Text>
 
               {/* Level Badge */}
               <View style={styles.levelContainer}>
@@ -137,7 +169,7 @@ export default function ProfileScreen() {
                     strokeWidth={2.5}
                     fill="white"
                   />
-                  <Text style={styles.levelText}>Level 12</Text>
+                  <Text style={styles.levelText}>Level {user?.level || 1}</Text>
                 </LinearGradient>
               </View>
             </View>
@@ -148,7 +180,9 @@ export default function ProfileScreen() {
                 <View style={styles.xpHeader}>
                   <View>
                     <Text style={styles.xpTitle}>Experience Points</Text>
-                    <Text style={styles.xpSubtitle}>260 XP to next level</Text>
+                    <Text style={styles.xpSubtitle}>
+                      {xpToNextLevel} XP to next level
+                    </Text>
                   </View>
                   <View style={styles.xpBadge}>
                     <Zap
