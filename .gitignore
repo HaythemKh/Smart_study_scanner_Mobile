@@ -43,3 +43,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Separate repositories (backend and admin are in their own repos)
+/backend/
+/frontend_admin/
